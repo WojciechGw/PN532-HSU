@@ -29,8 +29,10 @@ import time
 import PN532
 
 
+SERIAL_PORT = "COM8"
+
 # Create an instance of the PN532 class.
-pn532 = PN532.PN532("/dev/ttyUSB0",115200)
+pn532 = PN532.PN532(SERIAL_PORT, 115200)
 
 # Call begin to initialize communication with the PN532.  Must be done before
 # any other calls to the PN532!
@@ -50,23 +52,23 @@ while True:
     # Check if a card is available to read.
     uid = pn532.read_passive_target()
     # Try again if no card is available.
-    if uid is "no_card":
+    if uid == "no_card":
         continue
     print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
     # Authenticate block 4 for reading with default key (0xFFFFFFFFFFFF).
     for i in range(0,16):
         if not pn532.mifare_classic_authenticate_block(uid, i, PN532.MIFARE_CMD_AUTH_B,
                                                        [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]):
-            print('Failed to authenticate block ')+str(i)
+            print('Failed to authenticate block ' + str(i))
             break
         # Read block 4 data.
         data = pn532.mifare_classic_read_block(i)
         if data is None:
-            print('Failed to read block ')+str(i)
+            print('Failed to read block ' + str(i))
             continue
         # Note that 16 bytes are returned, so only show the first 4 bytes for the block.
 
-        print "Read block "+str(i)+" - "+(': 0x{0}'.format(binascii.hexlify(data[:16]))) + " - "+''.join(map(chr,data))
+        print("Read block " + str(i) + " - " + (': 0x{0}'.format(binascii.hexlify(data[:16]))) + " - " + ''.join(map(chr,data)))
 
         # Example of writing data to block 4.  This is commented by default to
         # prevent accidentally writing a card.

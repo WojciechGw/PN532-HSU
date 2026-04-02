@@ -140,8 +140,7 @@ PN532_GPIO_P33                      = 3
 PN532_GPIO_P34                      = 4
 PN532_GPIO_P35                      = 5
 
-PN532_ACK_STRING                    = "0000ff00ff00"
-PN532_ACK_FRAME                     = "\x00\x00\xFF\x00\xFF\x00"
+PN532_ACK_FRAME                     = b"\x00\x00\xFF\x00\xFF\x00"
 
 
 def millis():
@@ -149,17 +148,17 @@ def millis():
 
 class PN532(object):
 
-    def __init__(self, uart_port = "COM5", uart_baudrate = 115200):
+    def __init__(self, uart_port = "COM8", uart_baudrate = 115200):
         self.status = False
         self.message = ""
 
-        print "Port:"+uart_port
+        print("Port:", uart_port)
         try:
             self.ser = serial.Serial(uart_port, uart_baudrate)
             self.ser.timeout=2;
             self.status = True
         except serial.SerialException:
-            print "Opening port error."
+            print("Opening port error.")
             self.status = False
 
     def _uint8_add(self, a, b):
@@ -207,31 +206,31 @@ class PN532(object):
 
     def _ack_wait(self, timeout):
         ack=False
-        rx_info=""
+        rx_info=b""
         start_time = millis()
         current_time = start_time
         while((current_time - start_time) < timeout and not ack):
             time.sleep(0.12)#Stability on receive
             rx_info += self.ser.read(self.ser.inWaiting())
             current_time = millis()
-            if (PN532_ACK_STRING in rx_info.encode("hex")):
+            if (binascii.hexlify(PN532_ACK_FRAME).decode() in binascii.hexlify(rx_info).decode()):
                 ack = True
         if(ack):
             if(len(rx_info)>6):
                 rx_info=rx_info.split(PN532_ACK_FRAME)
-                self.message = ''.join(rx_info)
+                self.message = b''.join(rx_info)
             else:
                 self.message = rx_info
             self.ser.flush()
             return ack
         else:
-            self.message = ""
+            self.message = b""
             return ack
 
     def _read_data(self, count):
         timeout = 1000
-        rx_info=""
-        if(self.message == ""):
+        rx_info=b""
+        if(self.message == b""):
             self._ack_wait(1000)
         else:
             rx_info = self.message
@@ -248,7 +247,7 @@ class PN532(object):
         response = self._read_data(length+8)
         # Check frame starts with 0x01 and then has 0x00FF (preceeded by optional
         # zeros).
-        if not (PN532_ACK_FRAME == response.tostring()):
+        if not (PN532_ACK_FRAME == response.tobytes()):
             if response[0] != 0x00:
                 raise RuntimeError('Response frame does not start with 0x01!')
             # Swallow all the 0x00 values that preceed 0xFF.
@@ -276,7 +275,7 @@ class PN532(object):
             return "no_card"
 
     def wakeup(self):
-        msg = '\x55\x55\x00\x00\x00'
+        msg = b'\x55\x55\x00\x00\x00'
         self.ser.write(msg)
 
     def call_function(self, command, response_length=0, params=[], timeout_sec=1):
