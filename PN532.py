@@ -411,3 +411,33 @@ class PN532(object):
                                       params=params,
                                       response_length=1)
         return response[0] == 0x00
+
+    def ntag215_read_page(self, page_number):
+        """Read 4 bytes from the specified NTAG215 page.
+        The underlying READ command (0x30) returns 16 bytes (4 consecutive pages);
+        only the first 4 bytes (the requested page) are returned.
+        Returns a bytearray of 4 bytes, or None on failure.
+        """
+        response = self.call_function(PN532_COMMAND_INDATAEXCHANGE,
+                                      params=[0x01, MIFARE_CMD_READ, page_number & 0xFF],
+                                      response_length=17)
+        if response is None or response[0] != 0x00:
+            return None
+        return response[1:5]
+
+    def ntag215_write_page(self, page_number, data):
+        """Write 4 bytes to the specified NTAG215 page.
+        Page number should be in range 4-129 (user memory).
+        Data must be a byte array of exactly 4 bytes.
+        Returns True if write succeeded, False otherwise.
+        """
+        assert data is not None and len(data) == 4, 'Data must be an array of 4 bytes!'
+        params = bytearray(6)
+        params[0] = 0x01  # Max card numbers
+        params[1] = MIFARE_ULTRALIGHT_CMD_WRITE  # 0xA2
+        params[2] = page_number & 0xFF
+        params[3:] = data
+        response = self.call_function(PN532_COMMAND_INDATAEXCHANGE,
+                                      params=params,
+                                      response_length=1)
+        return response[0] == 0x00
