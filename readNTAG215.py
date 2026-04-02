@@ -46,22 +46,19 @@ ic, ver, rev, support = pn532.get_firmware_version()
 print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
 
 
-# Main loop to detect cards and read a block.
-print('Waiting for MiFare card...')
-while True:
-    # Check if a card is available to read.
+print('Waiting for NTAG215 card...')
+uid = pn532.read_passive_target()
+while uid == "no_card":
     uid = pn532.read_passive_target()
-    # Try again if no card is available.
-    if uid == "no_card":
-        continue
-    print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
-    # NTAG215: 45 pages (0-44), 4 bytes each, no authentication required.
-    for i in range(0, 45):
-        data = pn532.mifare_classic_read_block(i)
-        if data is None:
-            print('Failed to read page ' + str(i))
-            continue
-        # Each NTAG215 page is 4 bytes; read returns 16 bytes (4 pages) starting from page i.
-        page = data[:4]
-        ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
-        print("Page {0:02d}: 0x{1}  {2}".format(i, binascii.hexlify(page).decode(), ascii_repr))
+print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
+# NTAG215: 135 pages (0-134), 4 bytes each, no authentication required.
+for i in range(0, 135):
+    page = pn532.ntag215_read_page(i)
+    if page is None:
+        # Retry once to rule out a transient error.
+        page = pn532.ntag215_read_page(i)
+        if page is None:
+            print('Card removed from reader at page {0}!'.format(i))
+            break
+    ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
+    print("Page {0:03d}: 0x{1}  {2}".format(i, binascii.hexlify(page).decode(), ascii_repr))
