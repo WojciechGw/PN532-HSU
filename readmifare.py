@@ -46,36 +46,20 @@ ic, ver, rev, support = pn532.get_firmware_version()
 print('Found PN532 with firmware version: {0}.{1}'.format(ver, rev))
 
 
-# Main loop to detect cards and read a block.
 print('Waiting for MiFare card...')
-while True:
-    # Check if a card is available to read.
+uid = pn532.read_passive_target()
+while uid == "no_card":
     uid = pn532.read_passive_target()
-    # Try again if no card is available.
-    if uid == "no_card":
+print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
+# Authenticate block 4 for reading with default key (0xFFFFFFFFFFFF).
+for i in range(0,16):
+    if not pn532.mifare_classic_authenticate_block(uid, i, PN532.MIFARE_CMD_AUTH_B,
+                                                   [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]):
+        print('Failed to authenticate block ' + str(i))
+        break
+    # Read block data.
+    data = pn532.mifare_classic_read_block(i)
+    if data is None:
+        print('Failed to read block ' + str(i))
         continue
-    print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
-    # Authenticate block 4 for reading with default key (0xFFFFFFFFFFFF).
-    for i in range(0,16):
-        if not pn532.mifare_classic_authenticate_block(uid, i, PN532.MIFARE_CMD_AUTH_B,
-                                                       [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]):
-            print('Failed to authenticate block ' + str(i))
-            break
-        # Read block 4 data.
-        data = pn532.mifare_classic_read_block(i)
-        if data is None:
-            print('Failed to read block ' + str(i))
-            continue
-        # Note that 16 bytes are returned, so only show the first 4 bytes for the block.
-
-        print("Read block " + str(i) + " - " + (': 0x{0}'.format(binascii.hexlify(data[:16]))) + " - " + ''.join(map(chr,data)))
-
-        # Example of writing data to block 4.  This is commented by default to
-        # prevent accidentally writing a card.
-        # Set first 4 bytes of block to 0xFEEDBEEF.
-        # data[0:4] = [0xFE, 0xED, 0xBE, 0xEF]
-        # # Write entire 16 byte block.
-        # pn532.mifare_classic_write_block(4, data)
-        # print('Wrote to block 4, exiting program!')
-        # # Exit the program to prevent continually writing to card.
-        # sys.exit(0)
+    print("Read block " + str(i) + " - " + (': 0x{0}'.format(binascii.hexlify(data[:16]))) + " - " + ''.join(map(chr,data)))

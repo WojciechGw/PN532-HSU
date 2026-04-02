@@ -354,6 +354,45 @@ class PN532(object):
             return response
 
 
+    def read_passive_target_with_info(self, card_baud=PN532_MIFARE_ISO14443A):
+        """Like read_passive_target but also returns ATQA and SAK for card type identification.
+        Returns (atqa, sak, uid) tuple where atqa is bytearray(2), sak is int, uid is bytearray.
+        Returns "no_card" if no card is present, None on communication error.
+        """
+        response = self.call_function(PN532_COMMAND_INLISTPASSIVETARGET,
+                                      params=[0x01, card_baud],
+                                      response_length=17)
+        if response is None:
+            return None
+        if response == "no_card":
+            return response
+        if response[0] != 0x01:
+            raise RuntimeError('More than one card detected!')
+        if response[5] > 7:
+            raise RuntimeError('Found card with unexpectedly long UID!')
+        atqa = response[2:4]
+        sak  = response[4]
+        uid  = response[6:6+response[5]]
+        return (atqa, sak, uid)
+
+    def ntag_get_version(self):
+        """Send GET_VERSION (0x60) to the card.
+        Returns 8-byte version bytearray for NTAG cards, or None if unsupported
+        (e.g. MiFare Ultralight, which does not implement GET_VERSION).
+        Version byte layout: [header, vendor, product_type, subtype,
+                               major_ver, minor_ver, storage_size, protocol]
+        Storage size: 0x0F=NTAG213, 0x11=NTAG215, 0x13=NTAG216.
+        """
+        try:
+            response = self.call_function(PN532_COMMAND_INDATAEXCHANGE,
+                                          params=[0x01, 0x60],
+                                          response_length=9)
+            if response is None or response[0] != 0x00:
+                return None
+            return response[1:]
+        except RuntimeError:
+            return None
+
     def mifare_classic_authenticate_block(self, uid, block_number, key_number, key):
         """Authenticate specified block number for a MiFare classic card.  Uid
         should be a byte array with the UID of the card, block number should be
