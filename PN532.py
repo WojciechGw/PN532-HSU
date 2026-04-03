@@ -1,9 +1,13 @@
-# https://www.securing.pl/en/how-mifare-classic-cards-work/
 
 # upgrade to Python3 & debuging by WojciechGw
 # 2026-04-03
 #
+# some docs:
+# - https://www.nxp.com/docs/en/data-sheet/NTAG215_216.pdf
+# - https://www.securing.pl/en/how-mifare-classic-cards-work/
+# - https://www.wakdev.com
 
+# PN532 HSU library
 # Example of detecting and reading a block from a MiFare NFC card.
 # Author: Manuel Fernando Galindo (mfg90@live.com)
 #
