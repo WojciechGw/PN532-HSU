@@ -156,7 +156,7 @@ class PN532(object):
 
     def __init__(self, uart_port = "COM8", uart_baudrate = 115200):
         self.status = False
-        self.message = ""
+        self.message = b""
 
         print("Port:", uart_port)
         try:
@@ -216,26 +216,16 @@ class PN532(object):
         start_time = millis()
         current_time = start_time
         while((current_time - start_time) < timeout and not ack):
-            time.sleep(0.12)#Stability on receive
+            time.sleep(0.12) # stability on receive
             rx_info += self.ser.read(self.ser.inWaiting())
             current_time = millis()
             if (binascii.hexlify(PN532_ACK_FRAME).decode() in binascii.hexlify(rx_info).decode()):
                 ack = True
         if(ack):
-            if(len(rx_info) <= 6):
-                # Only ACK received so far; block on ser.read(1) until the first
-                # byte of the response frame arrives (up to the serial timeout).
-                original_timeout = self.ser.timeout
-                self.ser.timeout = 0.5
-                first = self.ser.read(1)
-                self.ser.timeout = original_timeout
-                if first:
-                    rx_info += first + self.ser.read(self.ser.inWaiting())
-            if(len(rx_info) > 6):
+            if(len(rx_info)>6):
                 rx_info=rx_info.split(PN532_ACK_FRAME)
                 self.message = b''.join(rx_info)
             else:
-                # Still only ACK — _read_frame will return "no_card" as expected.
                 self.message = rx_info
             self.ser.flush()
             return ack
@@ -246,7 +236,7 @@ class PN532(object):
     def _read_data(self, count):
         rx_info=b""
         if(self.message == b""):
-            self._ack_wait(1000)
+            self._ack_wait(1000) # timeout
         else:
             rx_info = self.message
         rx_info = array.array('B',rx_info)
@@ -324,11 +314,8 @@ class PN532(object):
         """Initialize communication with the PN532.  Must be called before any
         other calls are made against the PN532.
         """
-        self.ser.flushInput()   # discard any data buffered before script start
+        self.ser.flushInput()
         self.wakeup()
-        time.sleep(0.1)         # give PN532 time to process wakeup
-        self.ser.flushInput()   # discard PN532 response to wakeup preamble
-        self.message = b""
 
     def get_firmware_version(self):
         """Call PN532 GetFirmwareVersion function and return a tuple with the IC,
