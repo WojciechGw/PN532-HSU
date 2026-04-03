@@ -1,4 +1,3 @@
-
 # upgrade to Python3 & debuging by WojciechGw
 # 2026-04-03
 #
@@ -6,8 +5,11 @@
 # - https://www.nxp.com/docs/en/data-sheet/NTAG215_216.pdf
 # - https://www.securing.pl/en/how-mifare-classic-cards-work/
 # - https://www.wakdev.com
+# - https://www.nxp.com/docs/en/application-note/AN10834.pdf
+# - https://www.nxp.com/design/design-center/training/TIP-MIFARE-SESSION-1
 
-# PN532 HSU library
+# PN532 HSU (High Speed UART) library
+#
 # Example of detecting and reading a block from a MiFare NFC card.
 # Author: Manuel Fernando Galindo (mfg90@live.com)
 #
@@ -473,6 +475,19 @@ class PN532(object):
         if response is None or response[0] != 0x00:
             return None
         return response[1:5]
+
+    def ntag215_read_block(self, start_page):
+        """Read 16 bytes (4 consecutive pages) starting at start_page using a single READ command.
+        Returns bytearray of 16 bytes, or None on failure.
+        For pages near the end of NTAG215 memory (e.g. start_page=132) the chip wraps
+        around — caller is responsible for ignoring bytes beyond the last valid page.
+        """
+        response = self.call_function(PN532_COMMAND_INDATAEXCHANGE,
+                                      params=[0x01, MIFARE_CMD_READ, start_page & 0xFF],
+                                      response_length=17)
+        if response is None or response[0] != 0x00:
+            return None
+        return bytearray(response[1:17])
 
     def ntag215_write_page(self, page_number, data):
         """Write 4 bytes to the specified NTAG215 page.

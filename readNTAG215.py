@@ -142,28 +142,37 @@ print('')
 
 TOTAL_PAGES = 135
 # NTAG215: 135 pages (0-134), 4 bytes each, no authentication required.
+# READ command returns 16 bytes (4 pages) per call → 34 calls instead of 135.
 user_memory = bytearray()   # pages 4-129 collected for NDEF parsing
 all_pages = {}              # page_number → bytearray(4), used for post-read list
-for i in range(0, TOTAL_PAGES):
-    page = pn532.ntag215_read_page(i)
-    if page is None:
+start = 0
+while start < TOTAL_PAGES:
+    block = pn532.ntag215_read_block(start)
+    if block is None:
         # Retry once to rule out a transient error.
-        page = pn532.ntag215_read_page(i)
-        if page is None:
+        block = pn532.ntag215_read_block(start)
+        if block is None:
             if display_mode == 2:
                 print('')
-            print('Card removed from reader at page {0}!'.format(i))
+            print('Card removed from reader at page {0}!'.format(start))
             break
-    all_pages[i] = page
-    if display_mode == 1:
-        ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
-        print("Page {0:03d}: 0x{1}  {2}".format(i, binascii.hexlify(page).decode(), ascii_repr))
-    else:
-        filled = (i + 1) * 40 // TOTAL_PAGES
+    for j in range(4):
+        page_num = start + j
+        if page_num >= TOTAL_PAGES:
+            break
+        page = bytearray(block[j*4 : j*4+4])
+        all_pages[page_num] = page
+        if 4 <= page_num <= 129:
+            user_memory += page
+        if display_mode == 1:
+            ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
+            print("Page {0:03d}: 0x{1}  {2}".format(page_num, binascii.hexlify(page).decode(), ascii_repr))
+    if display_mode == 2:
+        pages_done = min(start + 4, TOTAL_PAGES)
+        filled = pages_done * 40 // TOTAL_PAGES
         bar = '#' * filled + '-' * (40 - filled)
-        print('\rReading: [{0}] {1:3d}/{2}'.format(bar, i + 1, TOTAL_PAGES), end='', flush=True)
-    if 4 <= i <= 129:
-        user_memory += page
+        print('\rReading: [{0}] {1:3d}/{2}'.format(bar, pages_done, TOTAL_PAGES), end='', flush=True)
+    start += 4
 
 if display_mode == 2:
     print('')
