@@ -1,3 +1,7 @@
+# upgrade to Python3, debuging and improvements by WojciechGw
+# 2026-04-03
+#
+
 # PN532 HSU Python driver
 
 Use PN532 Hardware on HSU mode without libnfc
