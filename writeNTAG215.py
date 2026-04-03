@@ -13,6 +13,7 @@ import math
 import sys
 import PN532
 
+SERIAL_PORT = "COM8"
 
 def make_ndef_text_pages(text, lang='en'):
     """Build NTAG215 page data for a single NDEF Text record (NFC Forum Well-Known Type 'T').
@@ -65,9 +66,6 @@ def make_ndef_text_pages(text, lang='en'):
         pages.append((4 + i // 4, bytearray(tlv[i:i+4])))
     return pages
 
-
-SERIAL_PORT = "COM8"
-
 # NTAG215 memory map:
 #   Pages 0-3  : UID, lock bytes, capability container (read-only)
 #   Pages 4-129: User memory (126 pages x 4 bytes = 504 bytes)
@@ -76,6 +74,9 @@ NTAG215_USER_PAGE_MIN = 4
 NTAG215_USER_PAGE_MAX = 129
 
 pn532 = PN532.PN532(SERIAL_PORT, 115200)
+if not pn532.status:
+    print('Error: serial port {0} is not available. Check connection and port name.'.format(SERIAL_PORT))
+    sys.exit(1)
 pn532.begin()
 pn532.SAM_configuration()
 

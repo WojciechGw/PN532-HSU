@@ -32,6 +32,7 @@ import sys
 import time
 import PN532
 
+SERIAL_PORT = "COM8"
 
 def parse_ndef_text(data):
     """Parse NDEF Text records from NTAG215 user memory bytes.
@@ -100,11 +101,11 @@ def parse_ndef_text(data):
         i = msg_end
     return results
 
-
-SERIAL_PORT = "COM8"
-
 # Create an instance of the PN532 class.
 pn532 = PN532.PN532(SERIAL_PORT, 115200)
+if not pn532.status:
+    print('Error: serial port {0} is not available. Check connection and port name.'.format(SERIAL_PORT))
+    sys.exit(1)
 
 # Call begin to initialize communication with the PN532.  Must be done before
 # any other calls to the PN532!
