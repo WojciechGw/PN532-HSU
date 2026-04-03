@@ -1,3 +1,7 @@
+# upgrade to Python3 & add NTAG215 by WojciechGw
+# 2026-04-03
+#
+
 # Example of detecting and reading a block from a MiFare NFC card.
 # Author: Manuel Fernando Galindo (mfg90@live.com)
 #

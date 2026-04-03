@@ -1,3 +1,7 @@
+# upgrade to Python3 & debuging by WojciechGw
+# 2026-04-03
+#
+
 # MiFare Classic NFC card writer.
 # Author: Manuel Fernando Galindo (mfg90@live.com) — extended for block types.
 #

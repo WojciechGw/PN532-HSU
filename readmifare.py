@@ -1,3 +1,9 @@
+# https://www.securing.pl/en/how-mifare-classic-cards-work/
+
+# upgrade to Python3 & debuging by WojciechGw
+# 2026-04-03
+#
+
 # Example of detecting and reading a block from a MiFare NFC card.
 # Author: Manuel Fernando Galindo (mfg90@live.com)
 #
