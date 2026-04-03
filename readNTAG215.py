@@ -126,19 +126,38 @@ print('Found card with UID: 0x{0}'.format(binascii.hexlify(uid)))
 
 print('')
 print('Display mode:')
-print('  1. Page list  (hex + ASCII per page)')
-print('  2. Progress bar')
+print('  1. Vertical list   (one page per line: hex + ASCII)')
+print('  2. Horizontal list (4 pages per line, max 80 chars)')
+print('  3. Progress bar')
 print('')
 display_mode = None
 while display_mode is None:
     try:
-        display_mode = int(input('Choose display mode (1 or 2): '))
-        if display_mode not in (1, 2):
-            print('Error! Enter 1 or 2.')
+        display_mode = int(input('Choose display mode (1, 2 or 3): '))
+        if display_mode not in (1, 2, 3):
+            print('Error! Enter 1, 2 or 3.')
             display_mode = None
     except ValueError:
         print('Error! Enter a number.')
 print('')
+
+def print_pages_horizontal(pages_dict):
+    """Print pages in horizontal layout: 4 pages per row, max 80 chars/line.
+    Each column: 'PPP:HHHHHHHH AAAA' (17 chars), separated by 2 spaces → 74 chars/row.
+    """
+    keys = sorted(pages_dict)
+    row = []
+    for page_num in keys:
+        page = pages_dict[page_num]
+        ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
+        col = '{0:03d}:{1} {2}'.format(page_num, binascii.hexlify(page).decode(), ascii_repr)
+        row.append(col)
+        if len(row) == 4:
+            print('  '.join(row))
+            row = []
+    if row:
+        print('  '.join(row))
+
 
 TOTAL_PAGES = 135
 # NTAG215: 135 pages (0-134), 4 bytes each, no authentication required.
@@ -167,7 +186,7 @@ while start < TOTAL_PAGES:
         if display_mode == 1:
             ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
             print("Page {0:03d}: 0x{1}  {2}".format(page_num, binascii.hexlify(page).decode(), ascii_repr))
-    if display_mode == 2:
+    if display_mode == 3:
         pages_done = min(start + 4, TOTAL_PAGES)
         filled = pages_done * 40 // TOTAL_PAGES
         bar = '#' * filled + '-' * (40 - filled)
@@ -175,14 +194,21 @@ while start < TOTAL_PAGES:
     start += 4
 
 if display_mode == 2:
+    print_pages_horizontal(all_pages)
+elif display_mode == 3:
     print('')
     show_list = input('Show page list? (Y/N): ').strip().lower()
     if show_list in ('y', 'yes'):
         print('')
-        for idx in sorted(all_pages):
-            page = all_pages[idx]
-            ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
-            print("Page {0:03d}: 0x{1}  {2}".format(idx, binascii.hexlify(page).decode(), ascii_repr))
+        fmt = input('Format — 1: vertical  2: horizontal: ').strip()
+        print('')
+        if fmt == '2':
+            print_pages_horizontal(all_pages)
+        else:
+            for idx in sorted(all_pages):
+                page = all_pages[idx]
+                ascii_repr = ''.join(chr(b) if 32 <= b < 127 else '.' for b in page)
+                print("Page {0:03d}: 0x{1}  {2}".format(idx, binascii.hexlify(page).decode(), ascii_repr))
 
 # ── NDEF Text records ─────────────────────────────────────────────────────────
 print('')
